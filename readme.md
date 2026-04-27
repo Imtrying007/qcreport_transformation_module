@@ -1,34 +1,66 @@
-# 📊 QC Transformation Pipeline
+## 📊 QC Transformation & Ingestion Pipeline
 
-A simple internal Streamlit application to transform **QC Mode** and **CGC CSV** files and generate a structured Excel report.
+A **Streamlit-based data engineering pipeline** that transforms QC Mode and CGC CSV files into structured Excel reports and serves as an **ingestion layer for the QC Portal**.
 
----
-
-# 🚀 Overview
-
-This tool allows users to:
-
-* Upload **QC Mode CSV**
-* Upload **CGC CSV**
-* Run transformation pipeline
-* Generate Excel report with multiple sheets
-* Download final output
-
-The application is designed for **internal team usage** 
+It is designed as a **modular ETL system for QC analytics, reporting, and downstream data consumption**.
 
 ---
 
-# 📁 Project Structure
+## 🚀 What This System Does
 
+* Ingests QC Mode and CGC CSV files
+* Processes data through a modular ETL pipeline
+* Generates structured **multi-sheet Excel reports**
+* Produces analytics for QC validation and reporting
+* Acts as an **input ingestion layer for QC Portal workflows**
+
+---
+
+## 🧠 Key Capabilities
+
+* ⚡ Fast in-memory data processing (no database dependency)
+* 🔄 Modular ETL-style architecture
+* 📊 Multi-level QC analytics (image, shop, summary)
+* 📥 Structured Excel report generation
+* 🔌 Dual role: Reporting engine + ingestion pipeline
+* 🧩 Easily extensible transformation modules
+* 🖥️ Lightweight Streamlit interface for internal users
+
+---
+
+## 🏗️ System Architecture
+
+```id="x3g2p1"
+QC Mode CSV + CGC CSV
+          ↓
+     main_file.py
+          ↓
+   Cleaned / Unified DataFrame
+          ↓
+ ┌────────────────────────────┐
+ │  Transformation Layer      │
+ │                            │
+ │  image_level.py            │
+ │  shop_category.py          │
+ │  summary.py                │
+ │  notes.py                  │
+ └────────────────────────────┘
+          ↓
+   excel_generation.py
+          ↓
+ Excel Report + QC Ingestion Payload
 ```
+
+---
+
+## 📁 Project Structure
+
+```id="p8n2qa"
 QC_transformation_module/
 
-app.py
-requirements.txt
-README.md
-.gitignore
+app.py                         → Streamlit UI (entry point)
 
-pipelines/
+pipelines/                     → Core ETL pipeline
     main_file.py
     image_level.py
     shop_category.py
@@ -36,66 +68,61 @@ pipelines/
     notes.py
     excel_generation.py
 
-utility/
-      grading.py
-      recommendation.py
+utility/                       → Reusable business logic
+    grading.py
+    recommendation.py
+    session_manager.py
+
+requirements.txt
+.gitignore
+readme.md
 ```
 
 ---
 
-# ⚙️ Requirements
+## 📄 Output
 
-* Python 3.9+
-* Streamlit
+### 📦 Generated File
+
+```
+qc_transformation_output.xlsx
+```
+
+### 📊 Sheets Included
+
+* **shopwise** → Category-level aggregation
+* **image_wise** → Image-level QC evaluation
+* **summary** → Overall QC performance metrics
+* **notes** → Error / incorrect category insights
+
+---
+
+## ⚙️ Tech Stack
+
+* Python
 * Pandas
-* Numpy
+* Streamlit
 * OpenPyXL
+* NumPy
 
 ---
 
-# 📦 Installation
+## ▶️ How to Run
 
-## Step 1: Clone Repository
-
-```
+```bash id="v9qkz3"
 git clone https://github.com/Imtrying007/qc_mode_reports.git
+cd qc_mode_reports
 
-
----
-
-## Step 2: Create Virtual Environment
-
-### Windows
-
-```
 python -m venv venv
-venv\Scripts\activate
-```
+venv\Scripts\activate      # Windows
+source venv/bin/activate   # Mac/Linux
 
-### Mac/Linux
-
-```
-python3 -m venv venv
-source venv/bin/activate
-```
-
----
-
-## Step 3: Install Dependencies
-
-```
 pip install -r requirements.txt
-```
 
----
-
-# ▶️ Run Application
-
-```
 streamlit run app.py
 ```
 
-Application will start at:
+Application runs at:
 
 ```
 http://localhost:8501
@@ -103,143 +130,46 @@ http://localhost:8501
 
 ---
 
-# 📊 How the Application Works
+## 🎯 Use Cases
 
-### 1️⃣ Upload Files
-
-* QC Mode CSV
-* CGC CSV
-
-### 2️⃣ Click Run Transformation
-
-Pipeline executes in sequence:
-
-```
-main_file.py
-image_level.py
-shop_category.py
-summary.py
-notes.py
-excel_generation.py
-```
-
-### 3️⃣ Download Excel
-
-Final Excel file is generated with multiple sheets.
+* QC data validation & reporting
+* Category performance analysis
+* Image-level quality auditing
+* Automated Excel report generation
+* QC Portal ingestion pipeline
+* Internal analytics automation
 
 ---
 
-# 📄 Output Excel
+## 🔌 System Role in Data Ecosystem
 
-Generated file:
+This project functions as:
 
-```
-qc_transformation_output.xlsx
-```
-
-### Sheets Included
-
-| Sheet Name | Description                   |
-| ---------- | ----------------------------- |
-| shopwise   | Shop category aggregation     |
-| image_wise | Image-level analysis          |
-| summary    | Overall QC summary            |
-| notes      | AI incorrect category summary |
+> ✔ ETL Processing Layer
+> ✔ QC Analytics Engine
+> ✔ Reporting System
+> ✔ Ingestion Pipeline for QC Portal
 
 ---
 
-# 🧠 Pipeline Flow
+## 📌 Engineering Highlights
 
-```
-QC Mode CSV
-CGC CSV
-      ↓
-main_file.py
-      ↓
-Analytic DataFrame
-      ↓
-image_level.py
-shop_category.py
-summary.py
-notes.py
-      ↓
-excel_generation.py
-      ↓
-Final Excel Output
-```
+* Modular ETL pipeline design
+* Separation of UI and transformation logic
+* Scalable pipeline structure for new QC rules
+* Stateless in-memory processing (fast execution)
+* Production-style folder architecture
+* Reusable utility layer for business logic
 
 ---
 
-# 🛠 Tech Stack
-
-* Python
-* Pandas
-* Streamlit
-* OpenPyXL
-
----
-
-# 👨‍💻 Usage
-
-This tool is intended for:
-
-* QC teams
-* Internal data transformation
-* Competition analysis
-* Category performance tracking
-* Excel report generation
-
----
-
-# 📌 Key Features
-
-* Simple UI
-* No login required
-* No database required
-* In-memory processing
-* Fast execution
-* Multiple Excel sheets
-* Internal deployment friendly
-* Supports 10–15 users
-
----
-
-# 📦 requirements.txt
-
-```
-streamlit
-pandas
-numpy
-openpyxl
-```
-
----
-
-# 🚀 Deployment Options
-
-### Local Deployment
-
-```
-streamlit run app.py
-```
-
-### Streamlit Community Cloud
-
-1. Push code to GitHub
-2. Go to Streamlit Cloud
-3. Select repository
-4. Deploy app
-
----
-
-# 🧾 License
+## 🧾 License
 
 Internal Use Only
 
 ---
 
-# 👤 Author
+## 👨‍💻 Author
 
-Shubham Dwivedi
+**Shubham Dwivedi**
 
-QC Transformation Module
