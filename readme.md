@@ -4,6 +4,7 @@ A **Streamlit-based data engineering pipeline** that transforms QC Mode and CGC 
 
 It is designed as a **modular ETL system for QC analytics, reporting, and downstream data consumption**.
 
+live demo url : https://qcreporttransformationmodule.streamlit.app/
 ---
 
 ## 🚀 What This System Does
