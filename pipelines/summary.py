@@ -48,27 +48,90 @@ def run_summary(run_dir):
     group_cols_cat = ['category_id', 'category_name']
 
     cat_agg = agg_df.groupby(group_cols_cat).agg(
+
+        # =====================================================
+        # TOTAL IMAGE COUNT
+        # =====================================================
         total_image_count=('test_image_id', 'nunique'),
+
+        # =====================================================
+        # SELF COUNT (PURE SELF)
+        # - excludes stickers
+        # - excludes others
+        # =====================================================
         self_count=('qc_competition',
-                    lambda x: (self_flag.loc[x.index]).sum()
-                              - (self_flag.loc[x.index] & sticker_flag.loc[x.index]).sum()),
+                    lambda x: (
+                        self_flag.loc[x.index]
+                        & ~sticker_flag.loc[x.index]
+                        & ~others_flag.loc[x.index]
+                    ).sum()),
+
+        # =====================================================
+        # COMP COUNT (PURE COMP)
+        # - excludes stickers
+        # - excludes others
+        # =====================================================
         comp_count=('qc_competition',
-                    lambda x: (comp_flag.loc[x.index]).sum()
-                              - (comp_flag.loc[x.index] & sticker_flag.loc[x.index]).sum()
-                              - (comp_flag.loc[x.index] & others_flag.loc[x.index]).sum()),
+                    lambda x: (
+                        comp_flag.loc[x.index]
+                        & ~sticker_flag.loc[x.index]
+                        & ~others_flag.loc[x.index]
+                    ).sum()),
+
+        # =====================================================
+        # OTHERS COUNT (INDEPENDENT BUCKET)
+        # - based only on class_name
+        # =====================================================
         others_count=('qc_class_name',
-                      lambda x: (comp_flag.loc[x.index] & others_flag.loc[x.index]).sum()),
+                      lambda x: others_flag.loc[x.index].sum()),
+
+        # =====================================================
+        # STICKER COUNT (INFORMATION ONLY)
+        # - qc_class_name contains sticker
+        # - ONLY where ai_correct is BLANK (NaN / empty)
+        # - excludes True / False evaluations
+        # =====================================================
         sticker_count=('qc_class_name',
-                       lambda x: sticker_flag.loc[x.index].sum()),
+                    lambda x: (
+                        sticker_flag.loc[x.index]
+                        & agg_df.loc[x.index, 'ai_correct'].isna()
+                    ).sum()),
+
+        # =====================================================
+        # INCORRECT SELF
+        # - only pure self
+        # - AI correctness applies
+        # =====================================================
         incorrect_self=('qc_competition',
-                        lambda x: (self_flag.loc[x.index] & incorrect_flag.loc[x.index]).sum()),
+                        lambda x: (
+                            self_flag.loc[x.index]
+                            & ~sticker_flag.loc[x.index]
+                            & ~others_flag.loc[x.index]
+                            & incorrect_flag.loc[x.index]
+                        ).sum()),
+
+        # =====================================================
+        # INCORRECT COMP
+        # - only pure competitor
+        # - AI correctness applies
+        # =====================================================
         incorrect_comp=('qc_competition',
-                        lambda x: (comp_flag.loc[x.index]
-                                   & incorrect_flag.loc[x.index]
-                                   & ~sticker_flag.loc[x.index]
-                                   & ~others_flag.loc[x.index]).sum()),
+                        lambda x: (
+                            comp_flag.loc[x.index]
+                            & ~sticker_flag.loc[x.index]
+                            & ~others_flag.loc[x.index]
+                            & incorrect_flag.loc[x.index]
+                        ).sum()),
+
+        # =====================================================
+        # INCORRECT OTHERS
+        # - AI correctness applies directly
+        # =====================================================
         incorrect_others=('qc_class_name',
-                          lambda x: (others_flag.loc[x.index] & incorrect_flag.loc[x.index]).sum())
+                          lambda x: (
+                              others_flag.loc[x.index]
+                              & incorrect_flag.loc[x.index]
+                          ).sum())
     ).reset_index()
 
     print("Category aggregation completed")
