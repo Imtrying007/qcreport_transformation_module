@@ -181,9 +181,9 @@ if page == "QC Pipeline":
 
 
 # ========================================
-# PAGE 2: LATEM SHEET PROCESSOR
+# PAGE 2: LATAM SHEET PROCESSOR
 # ========================================
-elif page == "Latem Sheet Processor":
+elif page == "Latam Sheet Processor":
 
     st.title("CSV / Excel Image Processor")
 
