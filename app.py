@@ -1,18 +1,27 @@
 # app.py
+
 import os
 import streamlit as st
-from utility.session_manager import init_run_session, save_uploaded_file, get_run_dir, cleanup_run
 
-# Import pipeline functions (make sure they accept run_dir as argument)
+from utility.session_manager import (
+    init_run_session,
+    save_uploaded_file,
+    get_run_dir,
+    cleanup_run
+)
+
+# ---------------- Pipeline Imports ----------------
 from pipelines.main_file import run_main_file
 from pipelines.image_level import run_image_level
 from pipelines.shop_category import run_shop_category
 from pipelines.summary import run_summary
 from pipelines.notes import run_notes
 from pipelines.excel_generation import run_excel_generation
+from pipelines.latem_sheet_process import run_latem_sheet_process
+
 
 # ----------------------------------------
-# Page Config
+# Page Configuration
 # ----------------------------------------
 st.set_page_config(
     page_title="QC Transformation Pipeline",
@@ -20,130 +29,246 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("📊 QC Transformation Pipeline")
-st.write("Upload QC Mode and CGC CSV files to run the pipeline. Each user session is isolated.")
-
 # ----------------------------------------
-# Initialize User Session
+# Sidebar Navigation (MAIN ROUTER)
 # ----------------------------------------
-if "run_dir" not in st.session_state:
-    run_dir = init_run_session()
-    st.session_state["run_dir"] = run_dir
-    st.success(f"Session started. Temporary workspace created: `{run_dir}`")
-else:
-    run_dir = st.session_state["run_dir"]
-    st.info(f"Existing session workspace: `{run_dir}`")
+page = st.sidebar.radio(
+    "Select Feature",
+    ["QC Pipeline", "Latem Sheet Processor"]
+)
 
-st.write("Your session workspace directory:")
-st.code(run_dir)
+# ========================================
+# PAGE 1: QC PIPELINE
+# ========================================
+if page == "QC Pipeline":
 
-# ----------------------------------------
-# Optional: Reset Session
-# ----------------------------------------
-if st.button("🧹 Reset Session"):
-    cleanup_run()
-    st.rerun()  # updated from experimental_rerun()
+    st.title("📊 QC Transformation Pipeline")
+    st.write("Upload QC Mode and CGC CSV files to run the pipeline.")
 
-# ----------------------------------------
-# File Upload
-# ----------------------------------------
-st.subheader("📂 Upload Files")
+    # ----------------------------------------
+    # Initialize User Session (isolated workspace)
+    # ----------------------------------------
+    if "run_dir" not in st.session_state:
+        run_dir = init_run_session()
+        st.session_state["run_dir"] = run_dir
+        st.success(f"Session started: `{run_dir}`")
+    else:
+        run_dir = st.session_state["run_dir"]
+        st.info(f"Using existing session: `{run_dir}`")
 
-qc_mode_file = st.file_uploader("Upload QC Mode CSV File", type=["csv"])
-cgc_file = st.file_uploader("Upload CGC CSV File", type=["csv"])
+    st.code(run_dir)
 
-uploaded = False
-if qc_mode_file:
-    qc_path = save_uploaded_file(qc_mode_file, "qc_mode.csv")
-    st.success(f"QC Mode CSV saved at `{qc_path}`")
-    uploaded = True
+    # ----------------------------------------
+    # Reset Session (safe cleanup)
+    # ----------------------------------------
+    if st.button("🧹 Reset Session"):
+        cleanup_run()
+        st.session_state.clear()   # IMPORTANT: clears stale state
+        st.rerun()
 
-if cgc_file:
-    cgc_path = save_uploaded_file(cgc_file, "cgc.csv")
-    st.success(f"CGC CSV saved at `{cgc_path}`")
-    uploaded = True
+    # ----------------------------------------
+    # File Upload Section
+    # ----------------------------------------
+    st.subheader("📂 Upload Files")
 
-if uploaded:
-    st.info("Files are saved in your isolated session workspace. Ready to run the pipeline.")
+    qc_mode_file = st.file_uploader(
+        "Upload QC Mode CSV",
+        type=["csv"],
+        key="qc_file"
+    )
 
-# ----------------------------------------
-# Run Pipeline
-# ----------------------------------------
-st.subheader("🚀 Run Pipeline")
+    cgc_file = st.file_uploader(
+        "Upload CGC CSV",
+        type=["csv"],
+        key="cgc_file"
+    )
 
-if st.button("Run QC Transformation Pipeline"):
+    uploaded = False
 
-    run_dir = get_run_dir()  # user's session workspace
+    if qc_mode_file:
+        qc_path = save_uploaded_file(qc_mode_file, "qc_mode.csv")
+        st.success(f"QC Mode saved: `{qc_path}`")
+        uploaded = True
 
-    try:
-        st.info("Running main_file.py...")
-        run_main_file(run_dir)
-        st.success("Main pipeline completed ✅")
+    if cgc_file:
+        cgc_path = save_uploaded_file(cgc_file, "cgc.csv")
+        st.success(f"CGC saved: `{cgc_path}`")
+        uploaded = True
 
-        st.info("Running image_level.py...")
-        run_image_level(run_dir)
-        st.success("Image level pipeline completed ✅")
+    if uploaded:
+        st.info("Files uploaded. Ready to run pipeline.")
 
-        st.info("Running shop_category.py...")
-        run_shop_category(run_dir)
-        st.success("Shop-category pipeline completed ✅")
+    # ----------------------------------------
+    # Run Pipeline
+    # ----------------------------------------
+    st.subheader("🚀 Run Pipeline")
 
-        st.info("Running summary.py...")
-        run_summary(run_dir)
-        st.success("Summary pipeline completed ✅")
+    if st.button("Run QC Transformation Pipeline"):
 
-        st.info("Running notes.py...")
-        run_notes(run_dir)
-        st.success("Notes pipeline completed ✅")
+        run_dir = get_run_dir()
 
-        st.info("Generating final Excel file...")
-        excel_path = run_excel_generation(run_dir)
-        st.success(f"Excel generated ✅ at `{excel_path}`")
+        try:
+            st.info("Running main_file...")
+            run_main_file(run_dir)
+            st.success("Main completed ✅")
 
-        # Save output paths in session_state for downloads
-        st.session_state['summary_path'] = os.path.join(run_dir, "summary.csv")
-        st.session_state['notes_path'] = os.path.join(run_dir, "notes.csv")
-        st.session_state['excel_path'] = excel_path
+            st.info("Running image_level...")
+            run_image_level(run_dir)
+            st.success("Image level completed ✅")
 
-    except Exception as e:
-        st.error(f"Pipeline execution failed ❌: {e}")
+            st.info("Running shop_category...")
+            run_shop_category(run_dir)
+            st.success("Shop-category completed ✅")
 
-# ----------------------------------------
-# Download Section
-# ----------------------------------------
-st.subheader("⬇️ Download Files")
+            st.info("Running summary...")
+            run_summary(run_dir)
+            st.success("Summary completed ✅")
 
-if 'summary_path' in st.session_state and os.path.exists(st.session_state['summary_path']):
-    with open(st.session_state['summary_path'], "rb") as f:
-        st.download_button(
-            label="Download summary.csv",
-            data=f,
-            file_name="summary.csv",
-            mime="text/csv"
+            st.info("Running notes...")
+            run_notes(run_dir)
+            st.success("Notes completed ✅")
+
+            st.info("Generating Excel...")
+            excel_path = run_excel_generation(run_dir)
+            st.success(f"Excel generated: `{excel_path}`")
+
+            # Save paths in session for downloads
+            st.session_state['summary_path'] = os.path.join(run_dir, "summary.csv")
+            st.session_state['notes_path'] = os.path.join(run_dir, "notes.csv")
+            st.session_state['excel_path'] = excel_path
+
+        except Exception as e:
+            st.error(f"Pipeline failed ❌: {e}")
+
+    # ----------------------------------------
+    # Download Section
+    # ----------------------------------------
+    st.subheader("⬇️ Download Files")
+
+    if 'summary_path' in st.session_state and os.path.exists(st.session_state['summary_path']):
+        with open(st.session_state['summary_path'], "rb") as f:
+            st.download_button(
+                "Download summary.csv",
+                f,
+                "summary.csv"
+            )
+
+    if 'notes_path' in st.session_state and os.path.exists(st.session_state['notes_path']):
+        with open(st.session_state['notes_path'], "rb") as f:
+            st.download_button(
+                "Download notes.csv",
+                f,
+                "notes.csv"
+            )
+
+    if 'excel_path' in st.session_state and os.path.exists(st.session_state['excel_path']):
+        with open(st.session_state['excel_path'], "rb") as f:
+            st.download_button(
+                "Download final_output.xlsx",
+                f,
+                "final_output.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+    # ----------------------------------------
+    # Show Files in Session Directory
+    # ----------------------------------------
+    st.subheader("📁 Session Files")
+
+    if run_dir and os.path.exists(run_dir):
+        for file in os.listdir(run_dir):
+            st.write(file)
+
+
+# ========================================
+# PAGE 2: LATEM SHEET PROCESSOR
+# ========================================
+elif page == "Latem Sheet Processor":
+
+    st.title("CSV / Excel Image Processor")
+
+    # ----------------------------------------
+    # Sidebar (scoped ONLY to this page)
+    # ----------------------------------------
+    with st.sidebar:
+        st.header("Processing Settings")
+
+        entries_per_shop = st.number_input(
+            "Entries per SHOP ID",
+            min_value=1,
+            max_value=1000,
+            value=20
         )
 
-if 'notes_path' in st.session_state and os.path.exists(st.session_state['notes_path']):
-    with open(st.session_state['notes_path'], "rb") as f:
-        st.download_button(
-            label="Download notes.csv",
-            data=f,
-            file_name="notes.csv",
-            mime="text/csv"
+        max_entries_per_category = st.number_input(
+            "Max entries per category (0 = no limit)",
+            min_value=0,
+            max_value=100000,
+            value=1
         )
 
-if 'excel_path' in st.session_state and os.path.exists(st.session_state['excel_path']):
-    with open(st.session_state['excel_path'], "rb") as f:
-        st.download_button(
-            label="Download final_output.xlsx",
-            data=f,
-            file_name="final_output.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+    # ----------------------------------------
+    # File Upload
+    # ----------------------------------------
+    uploaded_file = st.file_uploader(
+        "Upload CSV or Excel",
+        type=["csv", "xlsx"],
+        key="latem_file"
+    )
 
-# ----------------------------------------
-# Optional: Show current session files
-# ----------------------------------------
-st.subheader("📁 Files in Your Session")
-if run_dir and os.path.exists(run_dir):
-    for file in os.listdir(run_dir):
-        st.write(file)
+    if not uploaded_file:
+        st.info("Please upload a CSV or Excel file to begin.")
+    else:
+        # ----------------------------------------
+        # Processing
+        # ----------------------------------------
+        with st.spinner("Processing..."):
+            result, error = run_latem_sheet_process(
+                    uploaded_file,
+                    entries_per_shop,
+                    max_entries_per_category
+                )
+
+        if error:
+            st.warning(error)
+        else:
+            st.success("Processing complete ✅")
+
+            # Preview
+            st.subheader("Preview")
+
+            # Category summary
+            st.subheader("Category Summary")
+            if error:
+                st.warning(error)
+            else:
+                st.success("Processing complete ✅")
+
+                processed_df = result["processed"]
+                summary_df = result["summary"]
+
+                # Preview
+                st.subheader("Preview")
+                st.dataframe(processed_df.head(50))
+
+                # Summary
+                st.subheader("Category Summary")
+                st.dataframe(summary_df)
+
+                # Download
+                csv_data = processed_df.to_csv(index=False).encode("utf-8")
+
+                st.download_button(
+                    "Download shop CSV",
+                    csv_data,
+                    "processed_output.csv",
+                    mime="text/csv"
+                )
+                csv_data2 = summary_df.to_csv(index=False).encode("utf-8")
+
+                st.download_button(
+                    "Download Date summary CSV",
+                    csv_data,
+                    "cat_date_summary_.csv",
+                    mime="text/csv"
+                )
