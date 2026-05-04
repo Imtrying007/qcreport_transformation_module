@@ -34,7 +34,7 @@ st.set_page_config(
 # ----------------------------------------
 page = st.sidebar.radio(
     "Select Feature",
-    ["QC Pipeline", "Latem Sheet Processor"]
+    ["QC Pipeline", "Latam Sheet Processor"]
 )
 
 # ========================================
@@ -183,7 +183,7 @@ if page == "QC Pipeline":
 # ========================================
 # PAGE 2: LATAM SHEET PROCESSOR
 # ========================================
-elif page == "Latem Sheet Processor":
+elif page == "Latam Sheet Processor":
 
     st.title("CSV / Excel Image Processor")
 
