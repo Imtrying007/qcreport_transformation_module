@@ -268,7 +268,7 @@ elif page == "Latem Sheet Processor":
 
                 st.download_button(
                     "Download Date summary CSV",
-                    csv_data,
+                    csv_data2,
                     "cat_date_summary_.csv",
                     mime="text/csv"
                 )
