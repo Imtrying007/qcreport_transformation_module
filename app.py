@@ -236,7 +236,7 @@ elif page == "Latam Sheet Processor":
 
             # Preview
             st.subheader("Preview")
-            st.dataframe(result.head(50))
+            st.dataframe(result["raw"].head(50))
 
             # Category summary
             st.subheader("Category Summary")
