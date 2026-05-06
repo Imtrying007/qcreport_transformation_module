@@ -64,12 +64,14 @@ app.py                         → Streamlit UI (entry point)
 pipelines/                     → Core ETL pipeline
     main_file.py
     image_level.py
+    latem_sheet_process.py
     shop_category.py
     summary.py
     notes.py
     excel_generation.py
 
 utility/                       → Reusable business logic
+    core_metrics.py
     grading.py
     recommendation.py
     session_manager.py

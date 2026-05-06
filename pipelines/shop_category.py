@@ -7,8 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utility.grading import assign_grade
 from utility.recommendation import assign_recommendation
-
-
+from utility.core_metrics import compute_core_metrics
 
 
 # -----------------------------------------
@@ -25,201 +24,141 @@ def run_shop_category(run_dir):
     # -----------------------------------------
     # Load data
     # -----------------------------------------
-    shop_df = pd.read_csv(input_path)
+    df = pd.read_csv(input_path)
     print("analytic.csv loaded successfully")
 
     # -----------------------------------------
-    # Normalize text columns
+    # Normalize
     # -----------------------------------------
-    shop_df['qc_class_name'] = shop_df['qc_class_name'].astype(str).str.lower()
-    shop_df['qc_competition'] = shop_df['qc_competition'].astype(str).str.lower()
-    shop_df['category_name'] = shop_df['category_name'].astype(str)
-
-    # -----------------------------------------
-    # Vectorized flags
-    # -----------------------------------------
-    self_flag = shop_df['qc_competition'] == 'self'
-    comp_flag = shop_df['qc_competition'] == 'competitor'
-    sticker_flag = shop_df['qc_class_name'].str.contains('sticker', na=False)
-    others_flag = shop_df['qc_class_name'].str.contains('other', na=False)
-    incorrect_flag = shop_df['ai_correct'] == False
+    df['qc_class_name'] = df['qc_class_name'].astype(str).str.lower()
+    df['qc_competition'] = df['qc_competition'].astype(str).str.lower()
+    df['category_name'] = df['category_name'].astype(str)
 
     # -----------------------------------------
-    # Groupby
+    # FLAGS
     # -----------------------------------------
-    group_cols_shop = ['category_id', 'category_name', 'shop_id' ,'capture_date']
+    self_flag = df['qc_competition'] == 'self'
+    comp_flag = df['qc_competition'] == 'competitor'
 
-    shop_agg = shop_df.groupby(group_cols_shop).agg(
+    raw_sticker_flag = df['qc_class_name'].str.contains('sticker', na=False)
+    others_flag = df['qc_class_name'].str.contains('other', na=False)
 
-        self_count=('qc_competition',
-            lambda x: (
-                self_flag.loc[x.index] &
-                ~sticker_flag.loc[x.index]
-            ).sum()
-        ),
+    incorrect_flag = df['ai_correct'] == False
 
-        comp_count=('qc_competition',
-            lambda x: (
-                comp_flag.loc[x.index] &
-                ~sticker_flag.loc[x.index] &
-                ~others_flag.loc[x.index]
-            ).sum()
-        ),
+    # -----------------------------------------
+    # STICKER LOGIC
+    # -----------------------------------------
+    exclude_sticker = raw_sticker_flag & df['ai_correct'].isna()
 
-        others_count=('qc_class_name',
-            lambda x: (
-                comp_flag.loc[x.index] &
-                others_flag.loc[x.index]
-            ).sum()
-        ),
+    # -----------------------------------------
+    # PURE BUCKETS
+    # -----------------------------------------
+    pure_self = self_flag & ~others_flag & ~exclude_sticker
+    pure_comp = comp_flag & ~others_flag & ~exclude_sticker
+
+    # -----------------------------------------
+    # OTHERS SPLIT
+    # -----------------------------------------
+    others_self = others_flag & self_flag
+    others_comp = others_flag & comp_flag
+
+    # -----------------------------------------
+    # FLATTEN INTO DF (for reuse utility)
+    # -----------------------------------------
+    df['self_count'] = pure_self.astype(int)
+    df['comp_count'] = pure_comp.astype(int)
+
+    df['others_self'] = others_self.astype(int)
+    df['others_comp'] = others_comp.astype(int)
+
+    df['incorrect_self'] = (pure_self & incorrect_flag).astype(int)
+    df['incorrect_comp'] = (pure_comp & incorrect_flag).astype(int)
+
+    df['incorrect_others_self'] = (others_self & incorrect_flag).astype(int)
+    df['incorrect_others_comp'] = (others_comp & incorrect_flag).astype(int)
+
+    # -----------------------------------------
+    # GROUPING
+    # -----------------------------------------
+    group_cols = ['category_id', 'category_name', 'shop_id', 'capture_date']
+
+    shop_agg = df.groupby(group_cols).agg(
+        total_image_count=('test_image_id', 'nunique'),
+
+        self_count=('self_count', 'sum'),
+        comp_count=('comp_count', 'sum'),
+
+        others_self=('others_self', 'sum'),
+        others_comp=('others_comp', 'sum'),
 
         sticker_count=('qc_class_name',
-            lambda x: sticker_flag.loc[x.index].sum()
+            lambda x: exclude_sticker.loc[x.index].sum()
         ),
 
-        incorrect_self=('qc_competition',
-            lambda x: (
-                self_flag.loc[x.index] &
-                incorrect_flag.loc[x.index]
-            ).sum()
-        ),
+        incorrect_self=('incorrect_self', 'sum'),
+        incorrect_comp=('incorrect_comp', 'sum'),
 
-        incorrect_comp=('qc_competition',
-            lambda x: (
-                comp_flag.loc[x.index] &
-                incorrect_flag.loc[x.index] &
-                ~sticker_flag.loc[x.index] &
-                ~others_flag.loc[x.index]
-            ).sum()
-        ),
-
-        incorrect_others=('qc_class_name',
-            lambda x: (
-                others_flag.loc[x.index] &
-                incorrect_flag.loc[x.index]
-            ).sum()
-        ),
-
-        total_image_count=('test_image_id', 'nunique')
-
+        incorrect_others_self=('incorrect_others_self', 'sum'),
+        incorrect_others_comp=('incorrect_others_comp', 'sum')
     ).reset_index()
 
     print("Shop-level aggregation completed")
 
     # -----------------------------------------
-    # Metrics
+    # CORE METRICS (single source of truth)
     # -----------------------------------------
-    shop_agg['SPI'] = (
-        shop_agg['self_count'] - shop_agg['incorrect_self']
-    ) / shop_agg['self_count']
+    shop_agg = compute_core_metrics(shop_agg)
 
-    shop_agg['CPI'] = (
-        shop_agg['comp_count'] - shop_agg['incorrect_comp']
-    ) / shop_agg['comp_count']
-
-    shop_agg['NPD'] = (
-        shop_agg['others_count'] /
-        (shop_agg['self_count'] +
-         shop_agg['comp_count'] +
-         shop_agg['others_count'])
-    )
-
-    shop_agg['total_count'] = (
-        shop_agg['self_count'] +
-        shop_agg['comp_count'] +
-        shop_agg['others_count']
-    )
-
-    shop_agg['total_incorrect'] = (
-        shop_agg['incorrect_self'] +
-        shop_agg['incorrect_comp'] +
-        shop_agg['incorrect_others']
-    )
-
-    shop_agg['accuracy'] = (
-        shop_agg['total_count'] -
-        shop_agg['total_incorrect']
-    ) / shop_agg['total_count']
-
-    print("Metrics calculated")
+    print("Metrics calculated via utility")
 
     # -----------------------------------------
-    # AI Grade
+    # GRADING
     # -----------------------------------------
     F = shop_agg['accuracy']
     G = shop_agg['SPI']
     H = shop_agg['NPD']
 
-    not_blank = (~F.isna()) & (~G.isna()) & (~H.isna())
-
-    shop_agg['Ai_grade'] = ""
-
     shop_agg = assign_grade(shop_agg, F, G, H)
-    
     print("AI grading completed")
 
     # -----------------------------------------
-    # Final Columns removed recommendataion
+    # FINAL COLUMNS
     # -----------------------------------------
-    final_cols_shop = [
-        'category_id','category_name','capture_date','shop_id','total_image_count',
-        'self_count','comp_count','others_count','sticker_count',
-        'incorrect_self','incorrect_comp','incorrect_others',
-        'SPI','CPI','NPD','total_count','total_incorrect','accuracy',
+    final_cols = [
+        'category_id', 'category_name', 'capture_date', 'shop_id',
+        'total_image_count',
+        'self_count', 'comp_count', 'others_self', 'others_comp',
+        'sticker_count',
+        'incorrect_self', 'incorrect_comp',
+        'incorrect_others_self', 'incorrect_others_comp',
+        'SPI', 'CPI', 'NPD',
+        'total_count', 'total_incorrect', 'accuracy',
         'Ai_grade'
     ]
 
-    shop_summary = shop_agg[final_cols_shop]
-    # -----------------------------------------
-    # Add Overall Row
-    # -----------------------------------------
-    overall_row = {
-        'category_id': '',
-        'category_name': 'Overall',
-        'capture_date': '',
-        'shop_id': '',
-        'total_image_count': shop_summary['total_image_count'].sum(),
-        'self_count': shop_summary['self_count'].sum(),
-        'comp_count': shop_summary['comp_count'].sum(),
-        'others_count': shop_summary['others_count'].sum(),
-        'sticker_count': shop_summary['sticker_count'].sum(),
-        'incorrect_self': shop_summary['incorrect_self'].sum(),
-        'incorrect_comp': shop_summary['incorrect_comp'].sum(),
-        'incorrect_others': shop_summary['incorrect_others'].sum(),
-        'SPI': (shop_summary['self_count'].sum() - shop_summary['incorrect_self'].sum()) / shop_summary['self_count'].sum(),
-        'CPI': (shop_summary['comp_count'].sum() - shop_summary['incorrect_comp'].sum()) / shop_summary['comp_count'].sum(),
-        'NPD': shop_summary['others_count'].sum() / shop_summary['total_count'].sum(),
-        'total_count': shop_summary['total_count'].sum(),
-        'total_incorrect': shop_summary['total_incorrect'].sum(),
-        'accuracy': (shop_summary['total_count'].sum() - shop_summary['total_incorrect'].sum()) / shop_summary['total_count'].sum(),
-        'Ai_grade': ''  # will be assigned next
-    }
-
-    # Convert to DataFrame for grading
-    overall_df = pd.DataFrame([overall_row])
-
-    # Call assign_grade
-    overall_df = assign_grade(
-        overall_df,
-        F=overall_df['accuracy'],
-        G=overall_df['SPI'],
-        H=overall_df['NPD']
-    )
-
-    # Append overall row to shop summary
-    shop_summary = pd.concat([shop_summary, overall_df], ignore_index=True)
+    shop_summary = shop_agg[final_cols]
 
     # -----------------------------------------
-    # Save CSV
+    # OVERALL ROW
+    # -----------------------------------------
+    total_df = pd.DataFrame([shop_summary.drop(
+        columns=['category_id', 'category_name', 'shop_id', 'capture_date']
+    ).sum(numeric_only=True)])
+
+    total_df['category_id'] = ''
+    total_df['category_name'] = 'OVERALL'
+    total_df['shop_id'] = ''
+    total_df['capture_date'] = ''
+
+    total_df = compute_core_metrics(total_df)
+    total_df = assign_grade(total_df, total_df['accuracy'], total_df['SPI'], total_df['NPD'])
+
+    shop_summary = pd.concat([shop_summary, total_df], ignore_index=True)
+
+    # -----------------------------------------
+    # SAVE
     # -----------------------------------------
     shop_summary.to_csv(output_path, index=False)
 
     print("shopwise.csv created successfully")
     print("-" * 40)
-
-
-# -----------------------------------------
-# Entry Point
-# -----------------------------------------
-# if __name__ == "__main__":
-#     run_shop_category(os.cwd())
