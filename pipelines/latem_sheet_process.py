@@ -149,6 +149,32 @@ def run_latem_sheet_process(uploaded_file, entries_per_shop, max_entries_per_cat
         processed_df = df_final[
             ["SHOP ID", "Category Name", "Image Link"]
         ]
+        # ==========================================
+        # LEFTOVER DATA FOR NEXT CYCLE
+        # ==========================================
+
+        # Copy original filtered dataframe before trimming columns
+        left_df_next_cycle = df_valid.copy()
+
+        # Get all selected image links
+        selected_links = set(processed_df["Image Link"])
+
+        # Clean annotated links for comparison
+        left_df_next_cycle["Cleaned Image Link"] = (
+            left_df_next_cycle["Image Link"]
+            .fillna("")
+        )
+
+        # Keep only rows NOT selected
+        left_df_next_cycle = left_df_next_cycle[
+            ~left_df_next_cycle["Cleaned Image Link"].isin(selected_links)
+        ]
+
+        # Optional cleanup
+        left_df_next_cycle = left_df_next_cycle.drop(
+            columns=["Cleaned Image Link"],
+            errors="ignore"
+        )
 
         # summary
         summary_df = (
@@ -168,7 +194,8 @@ def run_latem_sheet_process(uploaded_file, entries_per_shop, max_entries_per_cat
         return {
             "processed": processed_df,
             "summary": summary_df,
-            "raw": df_final
+            "raw": df_final,
+            "left_for_next_cycle": left_df_next_cycle
         }, None
 
     except Exception as e:

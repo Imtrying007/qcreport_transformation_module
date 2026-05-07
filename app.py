@@ -247,6 +247,7 @@ elif page == "Latam Sheet Processor":
 
                 processed_df = result["processed"]
                 summary_df = result["summary"]
+                leftover_shops_df= result["left_for_next_cycle"]
 
                 # Preview
                 st.subheader("Preview")
@@ -271,5 +272,13 @@ elif page == "Latam Sheet Processor":
                     "Download Date summary CSV",
                     csv_data2,
                     "cat_date_summary_.csv",
+                    mime="text/csv"
+                )
+
+                csv_data3 = leftover_shops_df.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    "Download left shops for next cycle",
+                    csv_data3,
+                    "left_for_next_cycle.csv",
                     mime="text/csv"
                 )
