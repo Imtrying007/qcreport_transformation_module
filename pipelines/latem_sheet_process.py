@@ -98,6 +98,10 @@ def run_latem_sheet_process(uploaded_file, entries_per_shop, max_entries_per_cat
 
         df_valid = df_valid.dropna(subset=["Capture Date"])
 
+         # Backup BEFORE quota 
+        full_valid_df = df_valid.copy()
+
+
         # STEP 4: quota logic
         if max_entries_per_category > 0:
             df_valid = apply_quota_with_date_fallback(
@@ -149,32 +153,27 @@ def run_latem_sheet_process(uploaded_file, entries_per_shop, max_entries_per_cat
         processed_df = df_final[
             ["SHOP ID", "Category Name", "Image Link"]
         ]
-        # ==========================================
-        # LEFTOVER DATA FOR NEXT CYCLE
-        # ==========================================
+        # ==============================
+        # LEFTOVER DATA (NEXT CYCLE)
+        # ==============================
+        left_df_next_cycle = full_valid_df.copy()
 
-        # Copy original filtered dataframe before trimming columns
-        left_df_next_cycle = df_valid.copy()
+        left_df_next_cycle["Image Link"] = (
+            left_df_next_cycle["annotated_image_link"]
+            .fillna("")
+            .str.replace(
+                "https://view.shelfwatch.io/?url=",
+                "",
+                regex=False
+            )
+        )
 
-        # Get all selected image links
         selected_links = set(processed_df["Image Link"])
 
-        # Clean annotated links for comparison
-        left_df_next_cycle["Cleaned Image Link"] = (
-            left_df_next_cycle["Image Link"]
-            .fillna("")
-        )
-
-        # Keep only rows NOT selected
         left_df_next_cycle = left_df_next_cycle[
-            ~left_df_next_cycle["Cleaned Image Link"].isin(selected_links)
+            ~left_df_next_cycle["Image Link"].isin(selected_links)
         ]
 
-        # Optional cleanup
-        left_df_next_cycle = left_df_next_cycle.drop(
-            columns=["Cleaned Image Link"],
-            errors="ignore"
-        )
 
         # summary
         summary_df = (
