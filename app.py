@@ -18,7 +18,7 @@ from pipelines.summary import run_summary
 from pipelines.notes import run_notes
 from pipelines.excel_generation import run_excel_generation
 from pipelines.latem_sheet_process import run_latem_sheet_process
-
+from pipelines.sheet_append import run_sheet_append_pipeline
 
 # ----------------------------------------
 # Page Configuration
@@ -34,7 +34,7 @@ st.set_page_config(
 # ----------------------------------------
 page = st.sidebar.radio(
     "Select Feature",
-    ["QC Pipeline", "Latam Sheet Processor"]
+    ["QC Pipeline", "Latam Sheet Processor" ,"CSV_Sheet_Append"]
 )
 
 # ========================================
@@ -282,3 +282,123 @@ elif page == "Latam Sheet Processor":
                     "left_for_next_cycle.csv",
                     mime="text/csv"
                 )
+# ========================================
+# PAGE 3: CSV / EXCEL SHEET APPEND
+# ========================================
+elif page == "CSV_Sheet_Append":
+    
+    st.title("📎 CSV / Excel Sheet Append Pipeline")
+
+    st.write(
+        """
+        Upload multiple CSV or Excel files.
+
+        Features:
+        - Append unlimited files
+        - Supports CSV + XLSX
+        - Supports multiple Excel sheets
+        - Remove duplicate rows
+        """
+    )
+
+    # ----------------------------------------
+    # Upload Files
+    # ----------------------------------------
+    uploaded_files = st.file_uploader(
+        "Upload CSV / Excel Files",
+        type=["csv", "xlsx"],
+        accept_multiple_files=True,
+        key="append_csv_files"
+    )
+
+    # ----------------------------------------
+    # Excel Sheet Options
+    # ----------------------------------------
+    excel_mode = st.radio(
+        "Excel Sheet Mode",
+        [
+            "Append All Sheets",
+            "Select Specific Sheet"
+        ]
+    )
+
+    selected_sheet = None
+
+    if excel_mode == "Select Specific Sheet":
+
+        selected_sheet = st.text_input(
+            "Enter Sheet Name",
+            value="Sheet1"
+        )
+
+    # ----------------------------------------
+    # Remove Duplicates
+    # ----------------------------------------
+    remove_duplicates = st.checkbox(
+        "Remove Duplicate Rows",
+        value=True
+    )
+
+    # ----------------------------------------
+    # Output File Name
+    # ----------------------------------------
+    output_filename = st.text_input(
+        "Output File Name",
+        value="combined_output.csv"
+    )
+
+    # ----------------------------------------
+    # Run Pipeline
+    # ----------------------------------------
+    if st.button("🚀 Run Append Pipeline"):
+
+        if not uploaded_files:
+
+            st.warning("Please upload at least one file.")
+
+        else:
+
+            try:
+
+                with st.spinner("Appending files..."):
+
+                    combined_df = run_sheet_append_pipeline(
+                        uploaded_files=uploaded_files,
+                        remove_duplicates=remove_duplicates,
+                        excel_mode=excel_mode,
+                        selected_sheet=selected_sheet
+                    )
+
+                if combined_df.empty:
+
+                    st.warning("No data found in uploaded files.")
+
+                else:
+
+                    st.success("Files combined successfully ✅")
+
+                    # Preview
+                    st.subheader("Preview")
+
+                    st.dataframe(combined_df.head(50))
+
+                    # Summary
+                    st.subheader("Summary")
+
+                    st.write(f"Total Rows: {len(combined_df)}")
+                    st.write(f"Total Columns: {len(combined_df.columns)}")
+
+                    # Download
+                    csv_data = combined_df.to_csv(index=False).encode("utf-8")
+
+                    st.download_button(
+                        label="⬇️ Download Combined CSV",
+                        data=csv_data,
+                        file_name=output_filename,
+                        mime="text/csv"
+                    )
+
+            except Exception as e:
+
+                st.error(f"Pipeline failed ❌: {e}")
+
