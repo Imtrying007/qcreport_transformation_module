@@ -77,6 +77,14 @@ def run_shop_category(run_dir):
     df["incorrect_others_comp"] = (others_comp & incorrect_flag).astype(int)
 
     # -----------------------------------------
+    # STICKER COUNT
+    # Only count stickers when ai_correct is NULL
+    # -----------------------------------------
+    df["sticker_count"] = (
+        sticker_flag & df["ai_correct"].isna()
+    ).astype(int)
+
+    # -----------------------------------------
     # GROUPING
     # -----------------------------------------
     group_cols = [
@@ -95,9 +103,7 @@ def run_shop_category(run_dir):
         others_self=("others_self", "sum"),
         others_comp=("others_comp", "sum"),
 
-        sticker_count=("qc_class_name",
-            lambda x: sticker_flag.loc[x.index].sum()
-        ),
+        sticker_count=("sticker_count", "sum"),
 
         incorrect_self=("incorrect_self", "sum"),
         incorrect_comp=("incorrect_comp", "sum"),
