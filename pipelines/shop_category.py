@@ -33,21 +33,21 @@ def run_shop_category(run_dir):
     df["qc_competition"] = df["qc_competition"].astype(str).str.lower()
 
     # -----------------------------------------
-    # FLAGS (base logic)
+    # FLAGS (same as image-level pipeline)
     # -----------------------------------------
     self_flag = df["qc_competition"].eq("self")
     comp_flag = df["qc_competition"].eq("competitor")
 
     others_flag = df["qc_class_name"].str.contains("other", na=False)
-    sticker_flag = df["qc_class_name"].str.contains("sticker", na=False)
+
+    # EXACT SAME LOGIC AS IMAGE LEVEL
+    sticker_raw = df["qc_class_name"].str.contains("sticker", na=False)
 
     incorrect_flag = df["ai_correct"].eq(False)
 
-    # -----------------------------------------
-    # STICKER RULE
-    # Only valid when ai_correct is NULL
-    # -----------------------------------------
-    exclude_sticker = sticker_flag & df["ai_correct"].isna()
+    sticker_flag = sticker_raw & df["ai_correct"].isna()
+
+    exclude_sticker = sticker_flag
 
     # -----------------------------------------
     # PURE BUCKETS (non-overlapping logic)
@@ -80,9 +80,7 @@ def run_shop_category(run_dir):
     # STICKER COUNT
     # Only count stickers when ai_correct is NULL
     # -----------------------------------------
-    df["sticker_count"] = (
-        sticker_flag & df["ai_correct"].isna()
-    ).astype(int)
+    df["sticker_count"] = sticker_flag.astype(int)
 
     # -----------------------------------------
     # GROUPING
