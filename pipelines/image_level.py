@@ -11,18 +11,11 @@ from utility.grading import assign_grade
 # -----------------------------------------
 # Image Level Pipeline
 # -----------------------------------------
-def run_image_level(run_dir):
+def run_image_level(run_dir,df):
     print("Starting Image Level Pipeline...")
     print("-" * 40)
 
-    input_path = os.path.join(run_dir, "analytic.csv")
     output_path = os.path.join(run_dir, "image_wise.csv")
-
-    # -----------------------------------------
-    # Load data
-    # -----------------------------------------
-    df = pd.read_csv(input_path)
-    print("analytic.csv loaded successfully")
 
     # -----------------------------------------
     # Normalize

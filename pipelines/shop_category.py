@@ -12,19 +12,12 @@ from utility.core_metrics import compute_core_metrics
 # -----------------------------------------
 # Shop Category Pipeline
 # -----------------------------------------
-def run_shop_category(run_dir):
+def run_shop_category(run_dir,df):
 
     print("Starting Shop Category Pipeline...")
     print("-" * 40)
 
-    input_path = os.path.join(run_dir, "analytic.csv")
     output_path = os.path.join(run_dir, "shopwise.csv")
-
-    # -----------------------------------------
-    # Load data
-    # -----------------------------------------
-    df = pd.read_csv(input_path)
-    print("analytic.csv loaded successfully")
 
     # -----------------------------------------
     # Normalize text

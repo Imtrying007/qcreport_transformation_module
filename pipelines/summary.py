@@ -10,18 +10,12 @@ from utility.recommendation import assign_recommendation
 from utility.core_metrics import compute_core_metrics
 
 
-def run_summary(run_dir):
+def run_summary(run_dir,df):
 
     print("Starting Summary Pipeline...")
     print("-" * 40)
 
-    input_path = os.path.join(run_dir, "analytic.csv")
     output_path = os.path.join(run_dir, "summary.csv")
-
-    # -----------------------------------------
-    # LOAD DATA
-    # -----------------------------------------
-    df = pd.read_csv(input_path)
 
     # -----------------------------------------
     # NORMALIZE

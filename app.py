@@ -2,6 +2,7 @@
 
 import os
 import streamlit as st
+import pandas as pd
 
 from utility.session_manager import (
     init_run_session,
@@ -19,6 +20,7 @@ from pipelines.notes import run_notes
 from pipelines.excel_generation import run_excel_generation
 from pipelines.latem_sheet_process import run_latem_sheet_process
 from pipelines.sheet_append import run_sheet_append_pipeline
+from pipelines.sku_level import run_sku_level
 
 # ----------------------------------------
 # Page Configuration
@@ -112,21 +114,29 @@ if page == "QC Pipeline":
             run_main_file(run_dir)
             st.success("Main completed ✅")
 
+            Analytic_path = os.path.join(run_dir, "analytic.csv")
+            df = pd.read_csv(Analytic_path)
+            print("analytic.csv loaded successfully")
+
             st.info("Running image_level...")
-            run_image_level(run_dir)
+            run_image_level(run_dir,df)
             st.success("Image level completed ✅")
 
             st.info("Running shop_category...")
-            run_shop_category(run_dir)
+            run_shop_category(run_dir,df)
             st.success("Shop-category completed ✅")
 
             st.info("Running summary...")
-            run_summary(run_dir)
+            run_summary(run_dir,df)
             st.success("Summary completed ✅")
 
             st.info("Running notes...")
-            run_notes(run_dir)
+            run_notes(run_dir,df)
             st.success("Notes completed ✅")
+
+            st.info("Running sku_level...")
+            run_sku_level(run_dir,df)
+            st.success("SKU level completed ✅")
 
             st.info("Generating Excel...")
             excel_path = run_excel_generation(run_dir)
@@ -135,6 +145,7 @@ if page == "QC Pipeline":
             # Save paths in session for downloads
             st.session_state['summary_path'] = os.path.join(run_dir, "summary.csv")
             st.session_state['notes_path'] = os.path.join(run_dir, "notes.csv")
+            st.session_state['sku_level_path'] = os.path.join(run_dir, "sku_level.csv")
             st.session_state['excel_path'] = excel_path
 
         except Exception as e:

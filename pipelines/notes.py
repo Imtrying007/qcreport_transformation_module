@@ -8,19 +8,13 @@ import os
 # -----------------------------------------
 # Notes Pipeline
 # -----------------------------------------
-def run_notes(run_dir):
+def run_notes(run_dir,df):
 
     print("Starting Notes Pipeline...")
     print("-" * 40)
 
-    input_path = os.path.join(run_dir, "analytic.csv")
     output_path = os.path.join(run_dir, "notes.csv")
 
-    # -----------------------------------------
-    # Load data
-    # -----------------------------------------
-    df = pd.read_csv(input_path)
-    print("analytic.csv loaded successfully")
 
     # -----------------------------------------
     # Filter ai_correct = False

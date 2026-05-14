@@ -15,6 +15,7 @@ def run_excel_generation(run_dir):
     summary_path = os.path.join(run_dir, "summary.csv")
     notes_path = os.path.join(run_dir, "notes.csv")
     analytic_path = os.path.join(run_dir, "analytic.csv")
+    sku_level_path = os.path.join(run_dir, "sku_level.csv")
 
     output_excel = os.path.join(run_dir, "final_output.xlsx")
 
@@ -76,6 +77,17 @@ def run_excel_generation(run_dir):
             files_added += 1
         else:
             print("notes.csv not found")
+        
+          # ----------------------------------------
+        # SKU Level Sheet
+        # ----------------------------------------
+        if os.path.exists(sku_level_path):
+            sku_df = pd.read_csv(sku_level_path)
+            sku_df.to_excel(writer, sheet_name="sku_level", index=False)
+            print("sku_level.csv added to Excel")
+            files_added += 1
+        else:
+            print("sku_level.csv not found")
 
     # ----------------------------------------
     # Final Status
