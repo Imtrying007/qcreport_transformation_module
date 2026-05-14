@@ -217,23 +217,41 @@ def run_latem_sheet_process(uploaded_file, entries_per_shop, max_entries_per_cat
         # ==============================
         # LEFTOVER DATA
         # ==============================
-        processed_links = set(processed_df["Image Link"].dropna())
 
-        left_df_next_cycle = full_valid_df.copy()
+        # keep original valid dataframe untouched
+        original_valid_df = df[
+            df["image_status"].astype(str).str.lower() == "valid"
+        ].copy()
 
-        left_df_next_cycle["Image Link"] = (
-            left_df_next_cycle["annotated_image_link"]
+        # normalize processed links
+        processed_links = set(
+            processed_df["Image Link"]
             .fillna("")
+            .astype(str)
+            .str.strip()
+            .str.rstrip("/")
+            .str.lower()
+        )
+
+        # normalize original links
+        normalized_links = (
+            original_valid_df["annotated_image_link"]
+            .fillna("")
+            .astype(str)
             .str.replace(
                 "https://view.shelfwatch.io/?url=",
                 "",
                 regex=False
             )
+            .str.strip()
+            .str.rstrip("/")
+            .str.lower()
         )
 
-        left_df_next_cycle = left_df_next_cycle[
-            ~left_df_next_cycle["Image Link"].isin(processed_links)
-        ]
+        # keep only unprocessed rows
+        left_df_next_cycle = original_valid_df[
+            ~normalized_links.isin(processed_links)
+        ].copy()
 
         # ==============================
         # SUMMARY
