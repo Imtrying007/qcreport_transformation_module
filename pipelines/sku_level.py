@@ -37,7 +37,7 @@ def run_sku_level(run_dir,df):
     # -----------------------------------------
     # 3:
     # total_actual_present
-    # same logic as notes
+    # 
     # -----------------------------------------
     total_actual_present_df = (
         df
