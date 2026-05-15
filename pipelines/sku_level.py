@@ -117,7 +117,7 @@ def run_sku_level(run_dir,df):
 
     # rename the columns
     result = result.rename(columns={
-        "qc_class_name": "SKU_name",
+        "qc_class_name": "class_name",
         "qc_class_id" :"class_id"
     })
 
