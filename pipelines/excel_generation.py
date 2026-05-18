@@ -14,6 +14,7 @@ def run_excel_generation(run_dir):
     image_path = os.path.join(run_dir, "image_wise.csv")
     summary_path = os.path.join(run_dir, "summary.csv")
     notes_path = os.path.join(run_dir, "notes.csv")
+    notes_grp_path = os.path.join(run_dir, "notes2.csv")
     analytic_path = os.path.join(run_dir, "analytic.csv")
     sku_level_path = os.path.join(run_dir, "sku_level.csv")
 
@@ -77,8 +78,18 @@ def run_excel_generation(run_dir):
             files_added += 1
         else:
             print("notes.csv not found")
+        # ----------------------------------------
+        # Notes_group Sheet
+        # ----------------------------------------
+        if os.path.exists(notes_grp_path):
+            notes_g_df = pd.read_csv(notes_grp_path)
+            notes_g_df.to_excel(writer, sheet_name="notes_g", index=False)
+            print("notes2.csv added to Excel")
+            files_added += 1
+        else:
+            print("notes_group.csv not found")
         
-          # ----------------------------------------
+        # ----------------------------------------
         # SKU Level Sheet
         # ----------------------------------------
         if os.path.exists(sku_level_path):

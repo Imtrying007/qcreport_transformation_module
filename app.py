@@ -21,7 +21,7 @@ from pipelines.excel_generation import run_excel_generation
 from pipelines.latem_sheet_process import run_latem_sheet_process
 from pipelines.sheet_append import run_sheet_append_pipeline
 from pipelines.sku_level import run_sku_level
-
+from pipelines.notes_class_others_group_non_others import run_notes_g
 # ----------------------------------------
 # Page Configuration
 # ----------------------------------------
@@ -132,7 +132,10 @@ if page == "QC Pipeline":
 
             st.info("Running notes...")
             run_notes(run_dir,df)
-            st.success("Notes completed ✅")
+
+            # with groups insight
+            run_notes_g(run_dir,df)
+            st.success("Notes_g completed ✅")
 
             st.info("Running sku_level...")
             run_sku_level(run_dir,df)
@@ -145,6 +148,7 @@ if page == "QC Pipeline":
             # Save paths in session for downloads
             st.session_state['summary_path'] = os.path.join(run_dir, "summary.csv")
             st.session_state['notes_path'] = os.path.join(run_dir, "notes.csv")
+            st.session_state['notes_g_path'] = os.path.join(run_dir, "notes2.csv")
             st.session_state['sku_level_path'] = os.path.join(run_dir, "sku_level.csv")
             st.session_state['excel_path'] = excel_path
 
@@ -170,6 +174,13 @@ if page == "QC Pipeline":
                 "Download notes.csv",
                 f,
                 "notes.csv"
+            )
+    if 'notes_g_path' in st.session_state and os.path.exists(st.session_state['notes_g_path']):
+        with open(st.session_state['notes_g_path'], "rb") as f:
+            st.download_button(
+                "Download notes_g.csv",
+                f,
+                "notes2.csv"
             )
 
     if 'excel_path' in st.session_state and os.path.exists(st.session_state['excel_path']):

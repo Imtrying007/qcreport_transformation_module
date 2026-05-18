@@ -27,6 +27,8 @@ def run_sku_level(run_dir,df):
         .groupby([
             "category_id",
             "category_name",
+            "qc_group_id",
+            "qc_group_name",
             "qc_class_id",
             "qc_class_name"
         ])
@@ -37,13 +39,15 @@ def run_sku_level(run_dir,df):
     # -----------------------------------------
     # 3:
     # total_actual_present
-    # 
+    # same logic as notes
     # -----------------------------------------
     total_actual_present_df = (
         df
         .groupby([
             "category_id",
             "category_name",
+            "qc_group_id",
+            "qc_group_name",
             "qc_class_id",
             "qc_class_name"
         ])
@@ -56,6 +60,8 @@ def run_sku_level(run_dir,df):
         on=[
             "category_id",
             "category_name",
+            "qc_group_id",
+            "qc_group_name",
             "qc_class_id",
             "qc_class_name"
         ],
@@ -85,6 +91,8 @@ def run_sku_level(run_dir,df):
         .groupby([
             "category_id",
             "category_name",
+            "qc_group_id",
+            "qc_group_name",
             "qc_class_id",
             "qc_class_name",
             "file_path"
@@ -98,6 +106,8 @@ def run_sku_level(run_dir,df):
         file_level.groupby([
             "category_id",
             "category_name",
+            "qc_group_id",
+            "qc_group_name",
             "qc_class_id",
             "qc_class_name"
         ])["case_count"].idxmax()
@@ -109,6 +119,8 @@ def run_sku_level(run_dir,df):
         on=[
             "category_id",
             "category_name",
+            "qc_group_id",
+            "qc_group_name",
             "qc_class_id",
             "qc_class_name"
         ],
@@ -117,8 +129,10 @@ def run_sku_level(run_dir,df):
 
     # rename the columns
     result = result.rename(columns={
-        "qc_class_name": "class_name",
-        "qc_class_id" :"class_id"
+        "qc_class_name": "Actual_class_name",
+        "qc_class_id" :"Actual_class_id",
+        "qc_group_id": "Actual_group_id",
+        "qc_group_name" : "Actual_group_name"
     })
 
     # -----------------------------------------
