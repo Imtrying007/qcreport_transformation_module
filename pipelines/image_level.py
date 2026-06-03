@@ -57,6 +57,7 @@ def run_image_level(run_dir,df):
         "category_name",
         "capture_date",
         "shop_id",
+        "shop_name",
         "test_image_id",
         "file_path",
     ]
@@ -157,6 +158,7 @@ def run_image_level(run_dir,df):
         "category_name",
         "capture_date",
         "shop_id",
+        "shop_name",
         "file_path",
         "test_image_id",
         "self_count",
