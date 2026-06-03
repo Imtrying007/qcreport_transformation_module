@@ -73,33 +73,55 @@ if page == "QC Pipeline":
     # ----------------------------------------
     st.subheader("📂 Upload Files")
 
-    qc_mode_file = st.file_uploader(
-        "Upload QC Mode CSV",
-        type=["csv"],
-        key="qc_file"
+    qc_mode_file = st.file_uploader("Upload QC Mode CSV", type=["csv"], key="qc_file")
+    cgc_file = st.file_uploader("Upload CGC CSV", type=["csv"], key="cgc_file")
+    volume_processed_file = st.file_uploader(
+        "Upload Volume Processed Table (Optional)",
+        type=["csv", "xlsx"],
+        key="volume_processed_file"
     )
 
-    cgc_file = st.file_uploader(
-        "Upload CGC CSV",
-        type=["csv"],
-        key="cgc_file"
-    )
+    # Track upload status properly
+    qc_uploaded = False
+    cgc_uploaded = False
+    vpt_uploaded = False
 
-    uploaded = False
-
+    # Save QC file
     if qc_mode_file:
         qc_path = save_uploaded_file(qc_mode_file, "qc_mode.csv")
         st.success(f"QC Mode saved: `{qc_path}`")
-        uploaded = True
+        qc_uploaded = True
 
+    # Save CGC file
     if cgc_file:
         cgc_path = save_uploaded_file(cgc_file, "cgc.csv")
         st.success(f"CGC saved: `{cgc_path}`")
-        uploaded = True
+        cgc_uploaded = True
 
-    if uploaded:
-        st.info("Files uploaded. Ready to run pipeline.")
+    # Save VPT file
+    if volume_processed_file:
+        try:
+            file_ext = os.path.splitext(volume_processed_file.name)[1].lower()
 
+            if file_ext == ".csv":
+                df_vpt = pd.read_csv(volume_processed_file)
+            else:
+                df_vpt = pd.read_excel(volume_processed_file)
+
+            vpt_path = os.path.join(run_dir, "vpt.csv")
+            df_vpt.to_csv(vpt_path, index=False)
+
+            st.success(f"VPT saved: `{vpt_path}`")
+            vpt_uploaded = True
+
+        except Exception as e:
+            st.error(f"Failed to process VPT file: {e}")
+
+    # Upload status message
+    if qc_uploaded and cgc_uploaded:
+        st.info("Required files uploaded. Ready to run pipeline.")
+    elif qc_uploaded or cgc_uploaded:
+        st.warning("Please upload BOTH QC Mode and CGC files.")
     # ----------------------------------------
     # Run Pipeline
     # ----------------------------------------

@@ -82,6 +82,7 @@ def run_shop_category(run_dir,df):
         "category_id",
         "category_name",
         "shop_id",
+        "shop_name",
         "capture_date",
     ]
 
@@ -131,6 +132,7 @@ def run_shop_category(run_dir,df):
         "category_name",
         "capture_date",
         "shop_id",
+        "shop_name",
         "total_image_count",
         "self_count",
         "comp_count",
