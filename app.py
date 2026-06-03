@@ -22,6 +22,7 @@ from pipelines.latem_sheet_process import run_latem_sheet_process
 from pipelines.sheet_append import run_sheet_append_pipeline
 from pipelines.sku_level import run_sku_level
 from pipelines.notes_class_others_group_non_others import run_notes_g
+from pipelines.img_date_count import run_img_selection_summary
 # ----------------------------------------
 # Page Configuration
 # ----------------------------------------
@@ -162,6 +163,10 @@ if page == "QC Pipeline":
             st.info("Running sku_level...")
             run_sku_level(run_dir,df)
             st.success("SKU level completed ✅")
+
+            st.info("Running date_image_count...")
+            run_img_selection_summary(run_dir,df)
+            st.success("image date count view completed ✅")
 
             st.info("Generating Excel...")
             excel_path = run_excel_generation(run_dir)
