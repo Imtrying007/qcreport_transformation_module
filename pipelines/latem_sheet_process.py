@@ -94,7 +94,7 @@ def apply_quota_with_date_fallback(df, quota):
 # ==============================
 # MAIN PIPELINE
 # ==============================
-def run_latem_sheet_process(uploaded_file, entries_per_shop, max_entries_per_category):
+def run_latem_sheet_process(uploaded_file, entries_per_shop, max_entries_per_category,prefix_convention="QC_T"):
 
     try:
         # STEP 1: Load
@@ -200,9 +200,8 @@ def run_latem_sheet_process(uploaded_file, entries_per_shop, max_entries_per_cat
                 end = start + entries_per_shop
 
                 chunk = group.iloc[start:end].copy()
-
-                chunk["SHOP ID"] = f"QC_T_{safe_cat}_{date}_S_{i+1}"
-
+                prefix = prefix_convention.strip().rstrip("_")
+                chunk["SHOP ID"] = f"{prefix}_{safe_cat}_{date}_S_{i+1}"
                 shop_frames.append(chunk)
 
         if not shop_frames:

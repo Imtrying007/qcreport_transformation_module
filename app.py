@@ -3,6 +3,7 @@
 import os
 import streamlit as st
 import pandas as pd
+from clean_cache import CacheCleaner
 
 from utility.session_manager import (
     init_run_session,
@@ -31,7 +32,22 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
+# ----------------------------------------
+# Global Cache Cleanup Button
+# ----------------------------------------
+st.sidebar.subheader("🧹 Cache Management")
 
+if st.sidebar.button("🧹 Clean Python Cache", use_container_width=True):
+
+    try:
+        with st.spinner("Cleaning Python cache..."):
+
+            CacheCleaner.clean_python_cache()
+
+        st.sidebar.success("Python cache cleaned successfully! ✅")
+
+    except Exception as e:
+        st.sidebar.error(f"Cache cleanup failed: {e}")
 # ----------------------------------------
 # Sidebar Navigation (MAIN ROUTER)
 # ----------------------------------------
@@ -241,6 +257,12 @@ elif page == "Latam Sheet Processor":
     # ----------------------------------------
     with st.sidebar:
         st.header("Processing Settings")
+        
+        prefix_convention = st.text_input(
+                    "Prefix Convention",
+                    value="QC_T",
+                    help="Enter the prefix convention for processing."
+                )
 
         entries_per_shop = st.number_input(
             "Entries per SHOP ID",
@@ -275,7 +297,8 @@ elif page == "Latam Sheet Processor":
             result, error = run_latem_sheet_process(
                     uploaded_file,
                     entries_per_shop,
-                    max_entries_per_category
+                    max_entries_per_category,
+                    prefix_convention
                 )
 
         if error:
