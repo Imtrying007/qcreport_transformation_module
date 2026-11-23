@@ -51,7 +51,7 @@ def save_uploaded_file(uploaded_file, filename):
     return path
 
 
-def cleanup_run(max_age_hours=0.25):
+def cleanup_run(max_age_hours=2):
     """
     Delete the current session folder and optionally old session folders.
     Default max_age_hours=0.25 → 15 minutes
